@@ -1,5 +1,5 @@
 package MultiProcFactory;
-# @(#) $Name:  $ $Id: MultiProcFactory.pm,v 1.14 2004/09/15 17:12:46 aaron Exp $
+# @(#) $Name:  $ $Id: MultiProcFactory.pm,v 1.5 2004/09/20 15:29:28 aaron Exp $
 ## Aaron Dancygier
 
 ## Base class forking object for distributed processing  
@@ -12,7 +12,7 @@ use IO::File;
 use IPC::Shareable;
 
 use vars qw($VERSION);
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 sub catch_int {
   IPC::Shareable->clean_up; 
@@ -30,16 +30,16 @@ sub factory {
   my $class = $params{work_by};
 
   unless ($class =~ /^\w+(?:\:\:\w+)*$/) {  
-    croak("must supply work_by parameter with relative class name\n");
+    croak("must supply work_by parameter with class name\n");
   }
 
-  eval "use ${baseclass}::$class";
+  eval "use $class";
 
   if ($@) {
     croak "Error in factory method\n@_, $@";
   }
                                                                                 
-  return "${baseclass}::$class"->new(%params);
+  return "$class"->new(%params);
 }
 
 sub new {
@@ -432,7 +432,7 @@ MultiProcFactory - Base class for multiprocess batch processing.
   };
 
   my $link_obj = MultiProcFactory->factory(
-    work_by => 'Generic',
+    work_by => 'MultiProcFactory::Generic',
     do_child => $do_child,
     do_parent_final => $do_parent_final,
     partition_list => [
@@ -471,7 +471,7 @@ This method takes all contructor arguments.  Additional parameters will be neede
 
 =over 4
 
-=item * work_by =>'Schema::Mailing' ## Package name to subclass
+=item * work_by =>'BFI::MultiProcFactory::Schema::Mailing' ## Package name to subclass
 
 =item * do_child => $code_ref_a ## code executed in each child
 

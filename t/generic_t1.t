@@ -34,7 +34,7 @@ sub {
 };
 
 my $obj1 = MultiProcFactory->factory(
-  work_by => 'Generic', 
+  work_by => 'MultiProcFactory::Generic', 
   do_child => $do_child,
   do_parent_final => $do_parent_final,
   partition_list => [
@@ -58,7 +58,7 @@ my $obj2 = MultiProcFactory->factory(
   log_file => 't/test2',
   log_children => 1,
   log_parent => 0,
-  work_by => 'Generic',
+  work_by => 'MultiProcFactory::Generic',
   do_child => $do_child2,
   do_parent_final => $do_parent_final,
   partition_list => [
@@ -78,7 +78,7 @@ unlink(<t/*log>);
 
 my $obj3 = MultiProcFactory->factory(
     log_file => 't/test3',
-    work_by => 'Generic',
+    work_by => 'MultiProcFactory::Generic',
     do_child => $do_child3,
     do_parent_final => $do_parent_final,
     partition_list => [
