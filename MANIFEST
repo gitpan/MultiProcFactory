@@ -5,3 +5,4 @@ README
 lib/MultiProcFactory.pm
 lib/MultiProcFactory/Generic.pm
 t/generic_t1.t
+t/nopipc_t2.t

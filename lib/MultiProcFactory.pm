@@ -1,5 +1,5 @@
 package MultiProcFactory;
-# @(#) $Name:  $ $Id: MultiProcFactory.pm,v 1.5 2004/09/20 15:29:28 aaron Exp $
+# @(#) $Name:  $ $Id: MultiProcFactory.pm,v 1.6 2004/09/21 23:06:49 aaron Exp $
 ## Aaron Dancygier
 
 ## Base class forking object for distributed processing  
@@ -12,7 +12,7 @@ use IO::File;
 use IPC::Shareable;
 
 use vars qw($VERSION);
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 sub catch_int {
   IPC::Shareable->clean_up; 
@@ -62,13 +62,15 @@ sub new {
   _set_parent_signals(\%args);
 
   ## set up default shared data structures
-  my $scalar_handle = tie my $shm_scalar, 'IPC::Shareable', undef, {destroy => 1};
-  my $hash_handle = tie my %shm_hash, 'IPC::Shareable', undef, {destroy => 1};
+  unless ($args{IPC_OFF}) {
+    my $scalar_handle = tie my $shm_scalar, 'IPC::Shareable', undef, {destroy => 1};
+    my $hash_handle = tie my %shm_hash, 'IPC::Shareable', undef, {destroy => 1};
 
-  $args{share_scalar}{handle} = $scalar_handle;
-  $args{share_scalar}{var} =  \$shm_scalar;
-  $args{share_hash}{handle} = $hash_handle;
-  $args{share_hash}{var} = \%shm_hash;
+    $args{share_scalar}{handle} = $scalar_handle;
+    $args{share_scalar}{var} =  \$shm_scalar;
+    $args{share_hash}{handle} = $hash_handle;
+    $args{share_hash}{var} = \%shm_hash;
+  }
 
   croak("required parameter do_child code reference is missing or not a code reference\n")
     unless (ref($args{do_child}) eq 'CODE');
@@ -271,41 +273,58 @@ sub get_prockeys {
 sub scalar_lock {
   my $self = shift;
 
-  return $self->{share_scalar}{handle}->shlock();
+  (! $self->{IPC_OFF}) 
+    ? return $self->{share_scalar}{handle}->shlock()
+    : return undef
+  ;
 }
 
 sub scalar_unlock {
   my $self = shift;
 
-  return $self->{share_scalar}{handle}->shunlock();
+  (! $self->{IPC_OFF}) 
+    ? return $self->{share_scalar}{handle}->shunlock()
+    : return undef
+  ;
 }
 
 sub hash_lock {
   my $self = shift;
 
-  return $self->{share_hash}{handle}->shlock();
+  (! $self->{IPC_OFF})
+    ? return $self->{share_hash}{handle}->shlock()
+    : return undef
+  ;
 }
 
 sub hash_unlock {
   my $self = shift;
 
-  return $self->{share_hash}{handle}->shunlock();
+  (! $self->{IPC_OFF})
+    ? return $self->{share_hash}{handle}->shunlock()
+    : return undef
+  ;
 }
 
 sub set_hash_element {
   my $self = shift;
 
   my ($key, $value) = @_;
-  
-  $self->hash_lock();
-  $self->{share_hash}{var}{$key} = $value;
-  $self->hash_unlock();
+ 
+  if (! $self->{IPC_OFF}) { 
+    $self->hash_lock();
+    $self->{share_hash}{var}{$key} = $value;
+    $self->hash_unlock();
+  }
 }
 
 sub get_hash_element {
   my ($self, $key) = @_;
 
-  return $self->{share_hash}{var}{$key};
+  (! $self->{IPC_OFF})
+    ?  return $self->{share_hash}{var}{$key}
+    : return undef
+  ;
 }
 
 sub set_scalar {
@@ -313,38 +332,47 @@ sub set_scalar {
 
   my $value = shift;
 
-  $self->scalar_lock();
-  ${$self->{share_scalar}{var}} = $value;
-  $self->scalar_unlock();
+  if (! $self->{IPC_OFF}) {
+    $self->scalar_lock();
+    ${$self->{share_scalar}{var}} = $value;
+    $self->scalar_unlock();
+  }
 }
 
 sub inc_scalar {
   my $self = shift;
 
-  $self->scalar_lock();
-  ${$self->{share_scalar}{var}} ++; 
-  $self->scalar_unlock();
+  if (! $self->{IPC_OFF}) {
+    $self->scalar_lock();
+    ${$self->{share_scalar}{var}} ++; 
+    $self->scalar_unlock();
+  }
 }
 
 sub dec_scalar {
   my $self = shift;
-                                                                                                                            
-  $self->scalar_lock();
-  ${$self->{share_scalar}{var}} --; 
-  $self->scalar_unlock();
+  
+  if (! $self->{IPC_OFF}) {  
+    $self->scalar_lock();
+    ${$self->{share_scalar}{var}} --; 
+    $self->scalar_unlock();
+  }
 }
 
 sub get_scalar {
   my $self = shift;
 
-  return ${$self->{share_scalar}{var}};
+  (! $self->{IPC_OFF})
+    ? return ${$self->{share_scalar}{var}}
+    : return undef
+  ;
 }
 
 sub set_parent_logname {
   my ($self) = @_;
 
   $self->{log_file} .= '.log'
-    unless ($self->{log_file} =~ /\.log$/);
+  unless ($self->{log_file} =~ /\.log$/);
   return $self->{log_file};
 }
 
@@ -494,6 +522,8 @@ This method takes all contructor arguments.  Additional parameters will be neede
 =item * parent_sig => {INT => $coderef, TERM => $coderef, ...} 
 
 =item * child_sig => {INT => $coderef, TERM => $coderef, ...} 
+
+=item * IPC_OFF => 0|1 (default 0) ## turns off default allocation of shared memory
 
 =back
 
