@@ -4,3 +4,6 @@ Revision history for Perl extension MultiProcFactory.
 	- original version; created by h2xs 1.22 with options
 		-AX MultiProcFactory
 
+0.02  Mon Sep 20 12:43:00 2004
+        - Fixed relative class bug in factory method.  Updated docs and tests.
+

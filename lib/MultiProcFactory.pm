@@ -12,7 +12,7 @@ use IO::File;
 use IPC::Shareable;
 
 use vars qw($VERSION);
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 sub catch_int {
   IPC::Shareable->clean_up; 
